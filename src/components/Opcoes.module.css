@@ -1,0 +1,140 @@
+/* Container geral */
+.box {
+  background: rgba(24, 0, 45, 1);
+  border-radius: 1rem;
+  box-shadow: 0 2px 12px rgba(24,0,45,0.18);
+  border: 2px solid #7e22ce;
+  padding: 1.2rem 1rem;
+  max-width: 350px;
+  min-width: 20vw;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  z-index: 20;
+  line-height: 1.6;
+}
+
+/* Botão fechar */
+.close {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  outline: 4px auto -webkit-focus-ring-color;
+  margin-top: 2rem;
+}
+
+/* Controle de volume */
+.control {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+  color: #fff;
+  justify-content: space-between; /* slider à direita */
+  width: 100%;
+}
+
+/* Slider (input range) */
+.slider {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  width: 150px;
+  height: 6px;
+  border-radius: 3px;
+  background: #2a004a;
+  outline: none;
+}
+
+/* Track preenchida */
+.slider::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #b300ff 0%, #b300ff var(--percent, 50%), #2a004a var(--percent, 50%), #2a004a 100%);
+}
+
+.slider::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #b300ff 0%, #b300ff var(--percent, 50%), #2a004a var(--percent, 50%), #2a004a 100%);
+}
+
+/* Thumb */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fff;
+  cursor: pointer;
+  margin-top: -5px; /* centraliza na track */
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+/* Toggle container */
+.toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* texto à esquerda, toggle à direita */
+  gap: 0.5rem;
+  position: relative;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #fff;
+  user-select: none;
+  width: 100%;
+}
+
+/* Checkbox escondido */
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+/* Slider visual do toggle */
+.sliderToggle {
+  width: 40px;
+  height: 20px;
+  background-color: #2a004a;
+  border-radius: 20px;
+  position: relative;
+  transition: background 0.3s;
+}
+
+/* Bolinha do toggle */
+.sliderToggle::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 1px;
+  top: 1px;
+  background-color: #b300ff;
+  border-radius: 50%;
+  transition: transform 0.3s;
+}
+
+/* Estado ativo do toggle */
+.toggle input:checked + .sliderToggle::before {
+  transform: translateX(20px);
+}
+
+.toggle input:checked + .sliderToggle {
+  background-color: #3e046b;
+}
