@@ -1,85 +1,100 @@
-  import { useState } from "react";
-  import { motion } from "framer-motion";
-  import styles from "./Login.module.css";
+import { useState } from "react";
+import { useAuth } from "../context/AuthContext"; // 1. Importar o useAuth
+// import authService from "../services/authService"; // 2. REMOVER o authService daqui
+import styles from "./Login.module.css"; 
 
-  export default function Login({ onClose, playClickSound }) {
-    const [erros, setErros] = useState({});
+export default function Login({ 
+  onClose, 
+  playClickSound, 
+  onSwitchToRegister
+}) {
+  const [apiError, setApiError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth(); // 3. Pegar a função de login do CONTEXTO
 
-    function handleSubmit(e) {
-      e.preventDefault();
-      const nome = e.target.nome.value.trim();
-      const email = e.target.email.value.trim();
-      const senha = e.target.senha.value;
-      const novosErros = {};
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setApiError("");
+    
+    const email = e.target.email.value.trim();
+    const senha = e.target.senha.value;
 
-      if (nome.length < 3) {
-        novosErros.nome = "O nome deve ter pelo menos 3 caracteres.";
-      }
-      if (senha.length < 6) {
-        novosErros.senha = "A senha deve ter pelo menos 6 caracteres.";
-      }
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        novosErros.email = "Email inválido.";
-      }
-
-      setErros(novosErros);
-
-      if (Object.keys(novosErros).length === 0) {
-        // Se passou nas validações, pode prosseguir
-        alert("Registro realizado!");
-        // ...lógica de registro...
-      }
+    if (!email || !senha) {
+      setApiError("Email e senha são obrigatórios.");
+      return;
     }
 
-    return (
-      <div className={styles.box}>
-        <h2>Registrar</h2>
-        <form className={styles.form} onSubmit={handleSubmit}>
-          <div className={styles.formGroup}>
-  <input
-    type="text"
-    name="nome"
-    placeholder="Nome"
-    className={styles.input}
-    autoComplete="name"
-  />
-  {erros.nome && <span className={styles.erro}>{erros.nome}</span>}
-</div>
+    setIsLoading(true);
+    try {
+      // 4. USAR a função de login do contexto
+      // Esta função vai chamar o authService E TAMBÉM o setUser
+      await login(email, senha); 
+      
+      // Sucesso! O contexto foi atualizado e a HomePage vai re-renderizar
+      playClickSound();
+      onClose(); 
 
-<div className={styles.formGroup}>
-  <input
-    type="email"
-    name="email"
-    placeholder="Email"
-    className={styles.input}
-    autoComplete="email"
-  />
-  {erros.email && <span className={styles.erro}>{erros.email}</span>}
-</div>
-
-<div className={styles.formGroup}>
-  <input
-    type="password"
-    name="senha"
-    placeholder="Senha"
-    className={styles.input}
-    autoComplete="new-password"
-  />
-  {erros.senha && <span className={styles.erro}>{erros.senha}</span>}
-</div>
-          <button type="submit" className={styles.btnRegistrar}>
-            Registrar
-          </button>
-        </form>
-        <button
-          className={styles.close}
-          onClick={() => {
-            playClickSound();
-            onClose();
-          }}
-        >
-          Fechar
-        </button>
-      </div>
-    );
+    } catch (error) {
+      // O contexto relança o erro, então podemos pegá-lo aqui
+      setApiError(error.toString()); 
+    } finally {
+      setIsLoading(false);
+    }
   }
+
+  // O resto do seu JSX (formulário, botões, etc.) continua igual
+  return (
+    <div className={styles.box}>
+      <h2>Login</h2>
+      <form className={styles.form} onSubmit={handleSubmit}>
+        <div className={styles.formGroup}>
+          <input
+            type="email"
+            name="email"
+            placeholder="Email"
+            className={styles.input}
+            autoComplete="email"
+          />
+        </div>
+        <div className={styles.formGroup}>
+          <input
+            type="password"
+            name="senha"
+            placeholder="Senha"
+            className={styles.input}
+            autoComplete="current-password"
+          />
+        </div>
+
+        {apiError && <span className={styles.erroApi}>{apiError}</span>}
+
+        <button 
+          type="submit" 
+          className={styles.btnRegistrar}
+          disabled={isLoading}
+        >
+          {isLoading ? "Entrando..." : "Entrar"}
+        </button>
+      </form>
+      <button
+        className={styles.linkButton} 
+        onClick={() => {
+          playClickSound();
+          onSwitchToRegister();
+        }}
+      >
+        Não tenho uma conta
+      </button>
+      <button
+        className={styles.close}
+        onClick={() => {
+          playClickSound();
+          onClose();
+        }}
+      >
+        Fechar
+      </button>
+    </div>
+  );
+}
+
