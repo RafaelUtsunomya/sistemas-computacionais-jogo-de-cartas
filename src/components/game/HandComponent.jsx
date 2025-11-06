@@ -1,136 +1,165 @@
 // src/components/HandComponent.jsx
 
-import React, { useRef, useEffect } from 'react';
-import * as PIXI from 'pixi.js';
 
-/**
- * Este componente é "burro". Ele não sabe nada sobre a lógica do jogo.
- * Ele apenas recebe dados (props) e desenha a mão.
- * * Props:
- * - app: A instância PIXI.Application (já pronta)
- * - handData: Array de nomes de texturas a desenhar
- * - selectedIndices: Um Set() com os índices das cartas selecionadas
- * - onCardClick: Função de callback (ex: handleCardClick(index))
- * - spritesRef: A ref do pai (GamePage) que vamos preencher com os sprites
- */
-const HandComponent = ({ 
-  app, 
-  handData, 
-  selectedIndices, 
-  onCardClick, 
-  spritesRef 
+
+import React from 'react';
+
+
+
+// Recebe o novo prop 'cardBackTextureName'
+
+const HandComponent = ({
+
+  hand,
+
+  selected,
+
+  isAnimating,
+
+  onCardClick,
+
+  cardSpriteMap,
+
+  cardBackTextureName, // <-- NOVO PROP
+
+  styles
+
 }) => {
-  
-  // Ref local apenas para o container
-  const handContainerRef = useRef(null);
 
-  // Efeito 1: Cria/Recria a mão quando os dados mudam
-  useEffect(() => {
-    if (!app || !app.stage) return; // Segurança
+ 
 
-    console.log("HandComponent: Montando a mão...");
+  // Pega as coordenadas do verso da carta
 
-    // 1. Cria o container e adiciona-o ao stage
-    const handContainer = new PIXI.Container();
-    handContainerRef.current = handContainer;
-    app.stage.addChild(handContainer);
+  const backSpriteInfo = cardSpriteMap[cardBackTextureName] || { x: 0, y: 0 };
 
-    // 2. Limpa a ref de sprites do pai
-    spritesRef.current = [];
-    
-    const cardSpacing = 40; 
+ 
 
-    // 3. Loop (o mesmo código que tínhamos antes)
-    handData.forEach((textureName, index) => {
-      const texture = PIXI.Assets.get(textureName);
-      if (!texture) {
-        console.warn(`Textura não encontrada: ${textureName}`);
-        return; 
-      }
+  return (
 
-      const cardSprite = new PIXI.Sprite(texture);
-      cardSprite.anchor.set(0.5, 1.0); 
+    <div className={styles.handContainer}>
 
-      // O 'isSelected' já não é preciso aqui, 
-      // pois o 'GamePage' (pai) é quem sabe
+       
 
-      const CARD_VISIBLE_WIDTH = 56; 
-      const CARD_VISIBLE_HEIGHT = 82;
-      const PADDING_INFERIOR_ESTIMADO = 10;
-      
-      cardSprite.hitArea = new PIXI.Rectangle(
-        -CARD_VISIBLE_WIDTH / 2, 
-        -(CARD_VISIBLE_HEIGHT + PADDING_INFERIOR_ESTIMADO), 
-        CARD_VISIBLE_WIDTH, 
-        CARD_VISIBLE_HEIGHT 
-      );
-      cardSprite.x = index * cardSpacing;
-      cardSprite.y = 0; // Posição default
-      cardSprite.eventMode = 'static'; 
-      cardSprite.cursor = 'pointer'; 
+      {hand.map((card, index) => {
 
-      // 4. O clique agora chama a função do Pai
-      cardSprite.on('pointertap', () => {
-        onCardClick(index); // "Avisa" o GamePage que foi clicado
-      });
+        // Pega as coordenadas da FRENTE da carta
 
-      handContainer.addChild(cardSprite);
-      
-      // 5. Preenche a ref do Pai com o sprite
-      spritesRef.current.push(cardSprite);
-    });
-    
-    // 6. Lógica de Resize (vive aqui)
-    const handleResize = () => {
-      if (!app || app._destroyed || !handContainer) return; 
+        const frontSpriteInfo = cardSpriteMap[card.textureName] || { x: 0, y: 0 };
 
-      const handXOffset = -50; // Posição da mão
-
-      const bottomY = (app.screen.height / app.stage.scale.y) - 20;
-      const centerX = (app.screen.width / app.stage.scale.x / 2);
-      
-      handContainer.x = (centerX - (handContainer.width / 2)) + handXOffset;
-      handContainer.y = bottomY;
-    };
-
-    // Guarda a ref do listener para o 'destroy'
-    app.resizeListener = handleResize; 
-    app.renderer.on('resize', app.resizeListener);
-    handleResize(); // Posiciona
-
-    // 7. Função de Limpeza (do componente)
-    return () => {
-      console.log("HandComponent: Destruindo a mão...");
-      
-      if (app && app.renderer && app.resizeListener) {
-        app.renderer.off('resize', app.resizeListener);
-      }
-      if (handContainer) {
-        handContainer.destroy({ children: true });
-      }
-      spritesRef.current = [];
-      handContainerRef.current = null;
-    };
-
-  // Dependências: Recria a mão SE o app ou os dados da mão mudarem
-  }, [app, handData, onCardClick, spritesRef]);
+        const isSelected = selected.has(card.id);
 
 
-  // Efeito 2: Atualiza a SELEÇÃO (sobe/desce)
-  // Roda sempre que 'selectedIndices' muda. É super rápido.
-  useEffect(() => {
-    // Loop nos sprites que guardámos na ref do pai
-    spritesRef.current.forEach((sprite, index) => {
-      if (selectedIndices.has(index)) {
-        sprite.y = -20; // Sobe
-      } else {
-        sprite.y = 0;   // Desce
-      }
-    });
-  }, [selectedIndices, spritesRef]); // Dependência: só a seleção
 
-  // Este componente não renderiza HTML, só no Pixi
-  return null;
+        return (
+
+          // --- ESTRUTURA 3D FLIP ---
+
+
+
+          // 1. O POSICIONADOR ('leque' e animação de "voar")
+
+          //    É este que tem o 'key' e o 'onClick'
+
+          <div
+
+            key={card.id}
+
+            className={`${styles.card} ${isSelected ? styles.selected : ''}`}
+
+            onClick={() => onCardClick(card.id)}
+
+            style={{
+
+              // Adiciona a animação de "Jogar" (quando clica 'Jogar Mão')
+
+              ...(isAnimating && isSelected && {
+
+                animation: `${styles.playAnimation} 0.5s forwards`
+
+              }),
+
+              // Adiciona a animação de "Comprar" (no início)
+
+              // com um atraso para cada carta
+
+              animationDelay: `${index * 100}ms`,
+
+            }}
+
+          >
+
+            {/* 2. O "VIRADOR" (controla a rotação 3D) */}
+
+            <div
+
+              className={styles.cardInner}
+
+              style={{
+
+                // Adiciona a animação de "Virar" (no início)
+
+                animationDelay: `${index * 100}ms`,
+
+              }}
+
+            >
+
+
+
+              {/* 3. O VERSO DA CARTA (face de trás) */}
+
+              <div className={`${styles.cardFace} ${styles.cardBack}`}>
+
+                <div
+
+                  className={styles.cardSprite}
+
+                  style={{
+
+                    backgroundPosition: `-${backSpriteInfo.x}px -${backSpriteInfo.y}px`,
+
+                  }}
+
+                />
+
+              </div>
+
+
+
+              {/* 4. A FRENTE DA CARTA (face da frente) */}
+
+              <div className={`${styles.cardFace} ${styles.cardFront}`}>
+
+                <div
+
+                  className={styles.cardSprite}
+
+                  style={{
+
+                    backgroundPosition: `-${frontSpriteInfo.x}px -${frontSpriteInfo.y}px`,
+
+                  }}
+
+                />
+
+              </div>
+
+
+
+            </div>
+
+          </div>
+
+        );
+
+      })}
+
+    </div>
+
+  );
+
 };
+
+
 
 export default HandComponent;
