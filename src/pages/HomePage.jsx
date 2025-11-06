@@ -6,8 +6,10 @@ import Login from "../components/Login";
 import AdminPanel from "../components/AdminPanel"; // 1. NOVO: Importar o AdminPanel
 import { useAuth } from "../context/AuthContext";   // 2. NOVO: Importar o hook de autenticação
 import styles from "./HomePage.module.css";
+import { useNavigate } from 'react-router-dom';
 
 export default function HomePage() {
+  const navigate = useNavigate();
   // 3. NOVO: Pegar o usuário e a função de logout do contexto
   const { user, logout } = useAuth(); 
 
@@ -121,7 +123,14 @@ export default function HomePage() {
         {/* 9. MODIFICADO: Esconder botões se QUALQUER modal estiver aberto */}
         {!mostrarRegistrar && !mostrarLogin && !mostrarOpcoes && !mostrarAdmin && (
           <nav className={styles.buttons} aria-label="Menu principal">
-            <button className={styles.btnPrimary}>Jogar</button>
+            <button 
+              className={styles.btnPrimary} 
+              onClick={() => {
+                playClickSound();
+                navigate('/game');
+             }}
+            >Jogar
+            </button>
             <button
               className={styles.btnSecondary}
               onClick={handleOpenOptions}
