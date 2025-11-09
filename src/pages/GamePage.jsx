@@ -1,6 +1,6 @@
 // src/pages/GamePage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 // --- MUDANÇA 1: Importar o 'api' (Axios), 'authService' e 'useNavigate' ---
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api'; 
@@ -10,6 +10,10 @@ import authService from '../services/authService';
 import styles from './GamePage.module.css';
 import HandComponent from '../components/game/HandComponent';
 import ScoreBox from '../components/game/Scorebox';
+import InfoPanel from '../components/game/InfoPanel';
+import Opcoes from '../components/Opcoes';
+import ComoJogar from '../components/ComoJogar';
+import Profile from '../components/Profile';
 
 // 1. O MAPA COMPLETO (não mudou)
 const CARD_SPRITE_MAP = {
@@ -70,6 +74,31 @@ const CARD_SPRITE_MAP = {
 
 // O nome da textura do verso da carta
 const CARD_BACK_TEXTURE_NAME = 'CardsPixelart/CardBack.png';
+const audioSelect = new Audio('/assets/cardSlide1.ogg');
+const audioDeselect = new Audio('/assets/cardSlide2.ogg');
+const audioButton = new Audio('/assets/button.ogg');
+const audioFoil = new Audio('/assets/foil2.ogg');
+const audioHighlight = new Audio('/assets/highlight2.ogg');
+const audioWin = new Audio('/assets/win.ogg');
+const audioNegative = new Audio('/assets/negative.ogg');
+const audioDraw = new Audio('/assets/card3.ogg');
+
+
+const allAudioSources = [
+  audioSelect, audioDeselect, audioButton, audioFoil,
+  audioHighlight, audioWin, audioNegative, audioDraw
+  // Adicione qualquer outro áudio que você tenha
+];
+
+// Função auxiliar para tocar o som (evita sobreposição se clicar rápido)
+const playAudio = (audioElement) => {
+  audioElement.currentTime = 0; // Reinicia o som
+  audioElement.play().catch(e => console.error("Erro ao tocar áudio:", e));
+};
+const playAudioFromStart = (audioElement) => {
+  audioElement.currentTime = 0;
+  playAudio(audioElement);
+};
 
 // --- Mapeamento para "Tradução" --- (não mudou)
 const rankMap = {
@@ -104,12 +133,42 @@ const GamePage = () => {
   const [selected, setSelected] = useState(new Set());
   const [isAnimating, setIsAnimating] = useState(false);
   const [score, setScore] = useState(0);
-  const [targetScore, setTargetScore] = useState(1000);
+  const [targetScore, setTargetScore] = useState(300);
   const [discardsRemaining, setDiscardsRemaining] = useState(0);
+  const [handResult, setHandResult] = useState(null);
+  const [currentLevel, setCurrentLevel] = useState(1);
+  const [handsRemaining, setHandsRemaining] = useState(4); // Mãos restantes
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [gameStatusMessage, setGameStatusMessage] = useState(""); // Ex: "Nível 1" ou "Game Over!"
+  const [deckCount, setDeckCount] = useState(44);
+  const [isVictory, setIsVictory] = useState(false);
+  const [showOpcoes, setShowOpcoes] = useState(false);
+  const [showComoJogar, setShowComoJogar] = useState(false);
+  const [volume, setVolume] = useState(1);
+  const [altoContraste, setAltoContraste] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileData, setProfileData] = useState(null); // Guarda os dados da API
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState(null);
+  const [finalGameTime, setFinalGameTime] = useState(null);
   
   // --- MUDANÇA 2: Inicializar o 'navigate' ---
   const navigate = useNavigate();
+useEffect(() => {
+    // Atualiza o volume de TODOS os áudios no array
+    allAudioSources.forEach(audio => {
+      audio.volume = volume;
+    });
+    
+    // Toca um som de "teste" (opcional, mas útil)
+    // Evita tocar no carregamento inicial (volume === 1)
+    if (volume > 0 && volume < 1) {
+      // Toca um som de feedback para o usuário ouvir a mudança
+      // Usamos 'audioSelect' como exemplo
+      playAudioFromStart(audioSelect);
+    }
 
+  }, [volume]);
   // --- MUDANÇA 3: Tratar Erros de API (incluindo 401) ---
   const handleApiError = (error, operation = "operação") => {
     console.error(`Erro ao ${operation}:`, error);
@@ -131,7 +190,54 @@ const GamePage = () => {
       console.error("Erro:", error.message);
     }
   };
+  const handlePlayAgain = () => {
+    // A forma mais fácil e garantida de reiniciar o jogo do zero
+    // é recarregar a página.
+    playAudio(audioButton);
+    window.location.reload();
+  };
+  const handleShowProfile = async () => {
+    
+    playAudio(audioButton); // Toca o som de clique
+    setShowProfile(true);   // Abre o modal imediatamente
+    
+    // Se já buscamos os dados antes, não busca de novo
+    if (profileData) {
+      return;
+    }
+    
+    setProfileLoading(true);
+    setProfileError(null);
+    
+    try {
+      // Usa a sua instância 'api' (Axios) para fazer a chamada GET
+      const response = await api.get('/User/me'); 
+      setProfileData(response.data); // Salva os dados no estado
+      
+    } catch (error) {
+      console.error("Erro ao buscar perfil:", error);
+      setProfileError("Não foi possível carregar o perfil.");
+      // Você pode usar sua função 'handleApiError(error, "buscar perfil")' aqui
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
+  const handleReturnToMenu = () => {
+    // Isso assume que sua página de menu/home está na rota "/"
+    playAudio(audioButton);
+    navigate('/');
+  };
+  const formatTime = (totalSeconds) => {
+  if (!totalSeconds || totalSeconds === 0) {
+    return "00:00"; // Retorna 00:00 se não houver tempo
+  }
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = Math.floor(totalSeconds % 60); 
+  const formattedMinutes = String(minutes).padStart(2, '0');
+  const formattedSeconds = String(seconds).padStart(2, '0');
+  return `${formattedMinutes}:${formattedSeconds}`;
+};
   // --- MUDANÇA 4: Usar 'api.post' (Axios) e tratar erros ---
   useEffect(() => {
     const startGame = async () => {
@@ -151,10 +257,45 @@ const GamePage = () => {
     };
     startGame();
   }, [navigate]); // Adiciona 'navigate' às dependências
+const isFirstRender = useRef(true);
+const playClickSound = () => {
+    playAudio(audioButton); // Usa o 'audioButton' que você já tem
+  };
+  // --- EFEITO DE "LEVEL UP" ---
+  useEffect(() => {
+    
+    // 1. Se for a primeira renderização (nível 1), não faz nada.
+    if (isFirstRender.current) {
+      isFirstRender.current = false; // Marca que não é mais a primeira
+      return; // Sai do efeito
+    }
 
+    // 2. Se não for a primeira, significa que o nível mudou!
+    console.log("LEVEL UP! Agendando som highlight2.ogg");
+
+    // 3. Agenda o som para tocar daqui a 1 segundo
+    const soundTimer = setTimeout(() => {
+      // Usa a função que já existe neste arquivo!
+      playAudioFromStart(audioHighlight); 
+    }, 0); // 1000ms = 1 segundo
+    
+    // (Boa prática) Limpa o timer se o componente for desmontado
+    return () => {
+      clearTimeout(soundTimer);
+    };
+
+  }, [currentLevel]);
+  
   // Lógica de clique (não mudou)
   const handleCardClick = (cardId) => {
     if (isAnimating) return;
+    if (selected.has(cardId)) {
+      // A carta JÁ ESTÁ selecionada -> vai DESELECIONAR
+      playAudio(audioDeselect);
+    } else if (selected.size < 5) {
+      // A carta NÃO ESTÁ selecionada -> vai SELECIONAR
+      playAudio(audioSelect);
+    }
     setSelected(prevSelected => {
       const newSelection = new Set(prevSelected);
       if (newSelection.has(cardId)) {
@@ -168,11 +309,35 @@ const GamePage = () => {
 
   // Função genérica para atualizar o estado (não mudou)
   const updateStateFromResponse = (gameState) => {
+    setDeckCount(gameState.deckCount);
     setHand(gameState.hand.map(translateBackendCard));
-    setScore(gameState.totalScore);
-    setDiscardsRemaining(gameState.discardsRemaining);
     setSelected(new Set());
     setIsAnimating(false);
+    
+    // --- MUDANÇA 2: ATUALIZAR TODOS OS NOVOS ESTADOS VINDOS DA API ---
+    setScore(gameState.currentLevelScore); // Mapeia a pontuação do nível
+    setTargetScore(gameState.targetScore);
+    setDiscardsRemaining(gameState.discardsRemaining);
+    setCurrentLevel(gameState.currentLevel);
+    setHandsRemaining(gameState.handsRemaining);
+    setIsGameOver(gameState.isGameOver);
+    if (gameState.isGameOver) {
+     // Comparamos a pontuação atual com a meta
+     if (gameState.currentLevelScore >= gameState.targetScore) {
+       // VITÓRIA
+       setIsVictory(true); // <-- Define o estado de vitória
+       playAudioFromStart(audioWin);
+     } else {
+       // DERROTA
+       setIsVictory(false); // <-- Garante que não é vitória
+       playAudioFromStart(audioNegative);
+     }
+     setFinalGameTime(gameState.elapsedGameTimeSeconds);
+   }
+    // Opcional: use a mensagem do backend
+    if (gameState.gameStatusMessage) {
+      setGameStatusMessage(gameState.gameStatusMessage);
+    }
   };
 
   // --- MUDANÇA 5: Usar 'api.post' (Axios) e tratar erros ---
@@ -180,17 +345,47 @@ const GamePage = () => {
     if (selected.size === 0 || selected.size > 5 || isAnimating || !gameId) {
       return;
     }
+    playAudio(audioButton);
     setIsAnimating(true);
+    setTimeout(() => {
+      playAudioFromStart(audioFoil);
+    }, 500); // 500ms = 0.5s (a duração da sua animação)
+    // --- FIM DA ADIÇÃO ---
+
+    // Você também deve ter o setTimeout que limpa a mão
+    setTimeout(() => {
+      // ... (lógica para remover cartas da mão e setar isAnimating(false)) ...
+    }, 500);
 
     const body = { cardIdsToPlay: Array.from(selected) };
 
     try {
-      // USA O AXIOS
       const response = await api.post(`/game/${gameId}/play`, body);
       const newGameState = response.data;
       
+      // O seu setTimeout de 500ms (para a animação da carta "voando")
       setTimeout(() => {
+        
+        // --- MUDANÇA 2: Ativar a animação de resultado ---
+        // Verifica se a API enviou os dados da mão jogada
+        if (newGameState.lastHandPlayed) {
+          setHandResult(newGameState.lastHandPlayed); // Ativa o <div>!
+          const resultData = {
+            handName: newGameState.lastHandPlayed.handName,
+            handScore: newGameState.lastHandPlayed.finalScore // Use 'finalScore'
+          };
+          setHandResult(resultData);
+          // Define um timer para limpar a animação e fazê-la sumir
+          // O tempo (1500ms) deve ser igual à duração da sua animação CSS "showHandResult"
+          setTimeout(() => {
+            setHandResult(null); // Desativa o <div>
+          }, 1500); 
+        }
+        // --- FIM DA MUDANÇA 2 ---
+        
+        // Atualiza o estado do jogo (nova mão, pontuação total, etc.)
         updateStateFromResponse(newGameState);
+
       }, 500);
 
     } catch (error) {
@@ -204,6 +399,7 @@ const GamePage = () => {
     if (selected.size === 0 || isAnimating || !gameId || discardsRemaining <= 0) {
       return;
     }
+    playAudio(audioButton);
     setIsAnimating(true); 
 
     const body = { cardIdsToDiscard: Array.from(selected) };
@@ -254,14 +450,95 @@ const GamePage = () => {
   // --- RENDER (não mudou) ---
   return (
     <div className={styles.gameContainer}>
+      {showOpcoes && (
+        <div className={styles.modalOverlay}>
+        <Opcoes
+          onClose={() => setShowOpcoes(false)}
+          volume={volume}
+          setVolume={setVolume}
+          altoContraste={altoContraste}
+          setAltoContraste={setAltoContraste}
+          playClickSound={playClickSound}
+          onReturnToMenu={handleReturnToMenu}
+        />
+      </div>
+      )}
+      
+      {showComoJogar && (
+        <div className={styles.modalOverlay}>
+          <ComoJogar
+            onClose={() => setShowComoJogar(false)}
+            playClickSound={playClickSound}
+          />
+        </div>
+      )}
+      {handResult && (
+        <div className={styles.handResultAnimation}>
+          <div className={styles.handResultName}>{handResult.handName}</div>
+          <div className={styles.handResultScore}>+{handResult.handScore}</div>
+        </div>
+      )}
+      {showProfile && (
+        <div className={styles.modalOverlay}>
+          <Profile
+            onClose={() => setShowProfile(false)}
+            playClickSound={playClickSound}
+            profileData={profileData}
+            isLoading={profileLoading}
+            error={profileError}
+          />
+        </div>
+      )}
+      {isGameOver && (
+        <div className={styles.gameOverOverlay}>
+          <div className={styles.gameOverBox}>
+            <h1 className={isVictory ? styles.victoryTitle : ''}>Fim de Jogo!</h1>
+            <p>{gameStatusMessage}</p>
+          {finalGameTime !== null && (
+              <p className={styles.finalTimeText}>
+                Tempo: {formatTime(finalGameTime)}
+              </p>
+            )}
+            {/* Container para os botões */}
+            <div className={styles.gameOverButtons}>
+              <button 
+                className={styles.gameOverButton} 
+                onClick={handlePlayAgain}
+              >
+                Jogar Novamente
+              </button>
+              <button 
+                // Adicionamos uma classe extra para estilizar o botão de menu
+                className={`${styles.gameOverButton} ${styles.menuButton}`}
+                onClick={handleReturnToMenu}
+              >
+                Voltar ao Menu
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
       
       <ScoreBox 
         score={score} 
         targetScore={targetScore} 
         discardsRemaining={discardsRemaining}
+        currentLevel={currentLevel}
+        handsRemaining={handsRemaining}
         styles={styles} 
+        // 6. PASSE AS NOVAS FUNÇÕES PARA O SCOREBOX
+        onShowComoJogar={() => {
+          playClickSound();
+          setShowComoJogar(true);
+        }}
+        onShowOpcoes={() => {
+          playClickSound();
+          setShowOpcoes(true);
+        }}
+        onShowProfile={handleShowProfile}
       />
-
+    <InfoPanel styles={styles} />
       <HandComponent
         hand={hand}
         selected={selected}
@@ -269,10 +546,16 @@ const GamePage = () => {
         onCardClick={handleCardClick}
         cardSpriteMap={CARD_SPRITE_MAP}
         cardBackTextureName={CARD_BACK_TEXTURE_NAME}
+        audioDraw={audioDraw} 
+        playAudioFromStart={playAudioFromStart}
         styles={styles}
+        
       />
 
       <div className={styles.deck}>
+        <div className={styles.deckCountText}>
+          {deckCount}/52
+        </div>
         <div
           className={styles.cardSprite}
           style={{
