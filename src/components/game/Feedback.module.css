@@ -1,0 +1,235 @@
+/* Feedback.module.css - Estilo Pixel Art */
+
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.85); /* Fundo bem escuro */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.box {
+  /* Cores do tema */
+  background-color: #1a0030;
+  border: 4px solid #4a008c;
+  
+  /* Sombra dura para efeito pixelado */
+  box-shadow: 8px 8px 0px rgba(0, 0, 0, 0.6);
+  
+  padding: 20px;
+  width: 90%;
+  max-width: 450px;
+  color: white;
+  
+  /* Fonte do jogo */
+  font-family: 'Press Start 2P', cursive;
+  text-shadow: 2px 2px #000000a0;
+  
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+/* Título */
+.title {
+  color: #ffff00; /* Amarelo destaque */
+  text-align: center;
+  margin: 0;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  font-size: 1.2rem;
+  text-transform: uppercase;
+  border-bottom: 4px solid #4a008c; /* Separador */
+}
+
+/* Labels (Tipo, Mensagem, etc) */
+.label {
+  font-size: 0.7rem; /* Fonte menor para labels */
+  color: #aaa;
+  margin-bottom: 8px;
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Campos de Entrada (Inputs) */
+.select, .textarea {
+  width: 100%;
+  padding: 12px;
+  
+  /* Fundo mais escuro que a caixa para dar profundidade */
+  background-color: #0d001a; 
+  border: 2px solid #4a008c;
+  
+  color: white;
+  font-family: 'Press Start 2P', cursive; /* Garante fonte pixel dentro do input */
+  font-size: 0.7rem;
+  line-height: 1.5;
+  
+  outline: none;
+  box-sizing: border-box;
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.5); /* Sombra interna */
+}
+
+.select:focus, .textarea:focus {
+  border-color: #ffff00; /* Borda amarela ao focar */
+}
+
+.textarea {
+  resize: none; /* Impede redimensionar livremente */
+  min-height: 100px;
+}
+
+/* --- Scrollbar Personalizada (Pixelada) --- */
+.textarea::-webkit-scrollbar {
+  width: 10px;
+}
+.textarea::-webkit-scrollbar-track {
+  background: #1a0030;
+  border-left: 2px solid #4a008c;
+}
+.textarea::-webkit-scrollbar-thumb {
+  background: #4a008c;
+  border: 1px solid #1a0030;
+}
+.textarea::-webkit-scrollbar-thumb:hover {
+  background: #6e2cb5;
+}
+
+/* Avaliação com Estrelas */
+.ratingContainer {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  padding: 5px 0;
+  background-color: #0d001a; /* Fundo para as estrelas */
+  border: 2px solid #4a008c;
+}
+
+.starBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #333; /* Estrela apagada */
+  transition: transform 0.1s;
+  padding: 0;
+  /* Remove o outline padrão chato */
+  outline: none;
+}
+
+.starBtn.active {
+  color: #ffff00; /* Amarelo aceso */
+  text-shadow: 2px 2px 0 #000; /* Borda preta na estrela */
+}
+
+.starBtn:hover {
+  transform: scale(1.2) translateY(-2px); /* Pulo pixelado */
+}
+
+/* Botões de Ação */
+.buttonGroup {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 15px;
+  gap: 15px;
+}
+
+/* Botão Genérico Base */
+.btnSend, .btnCancel {
+  flex: 1;
+  padding: 12px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: white;
+  cursor: pointer;
+  text-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+  box-shadow: 4px 4px 0px rgba(0,0,0,0.5); /* Sombra dura */
+  border: none;
+  transition: all 0.1s;
+}
+
+/* Estilo Específico Enviar (Azul) */
+.btnSend {
+  background-color: #3B82F6; 
+  border: 2px solid #1D4ED8;
+}
+.btnSend:hover {
+  background-color: #60A5FA;
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
+}
+.btnSend:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+}
+
+/* Estilo Específico Cancelar (Vermelho) */
+.btnCancel {
+  background-color: #f44336;
+  border: 2px solid #b71c1c;
+}
+.btnCancel:hover {
+  background-color: #ef5350;
+  transform: translate(-1px, -1px);
+  box-shadow: 6px 6px 0px rgba(0,0,0,0.5);
+}
+.btnCancel:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0px rgba(0,0,0,0.5);
+}
+
+.btnSend:disabled {
+  background-color: #555;
+  border-color: #333;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: translate(2px, 2px);
+}
+
+/* Botão Flutuante ("?") */
+.floatingBtn {
+  position: fixed;
+  bottom: 20px;
+  
+  /* --- MUDANÇA AQUI --- */
+  left: 20px; /* Volta para a esquerda */
+  /* right: 20px; <--- Remova ou comente esta linha */
+  
+  width: 50px;
+  height: 50px;
+  
+  background-color: #333;
+  border: 2px solid #fff;
+  color: white;
+  
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1.5rem;
+  
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  
+  box-shadow: 4px 4px 0 rgba(0,0,0,0.8);
+  z-index: 100;
+  transition: all 0.1s;
+}
+
+.floatingBtn:hover {
+  background-color: #555;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 rgba(0,0,0,0.8);
+}
+
+.floatingBtn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.8);
+}

@@ -30,3 +30,44 @@ html, body {
   pointer-events: none;
   will-change: transform, opacity, filter;
 }
+.background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none; /* O clique passa através da animação */
+  z-index: 0; /* Fica atrás de tudo */
+}
+
+/* O Container da carta (o que se move) */
+.cardContainer {
+  position: absolute;
+  /* Tamanho lógico da carta no jogo */
+  width: 56px; 
+  height: 82px;
+  
+  /* Não cortamos o conteúdo (overflow visible) para ver a margem do sprite */
+  overflow: visible; 
+}
+
+/* O Sprite interno (a imagem) */
+.cardSprite {
+  /* Tamanho real do recorte no spritesheet */
+  width: 100px;
+  height: 100px;
+  
+  background-repeat: no-repeat;
+  
+  /* Mantém o estilo pixelado */
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  
+  /* Ajuste de posição para compensar a margem transparente */
+  /* (Mesmos valores do HandComponent) */
+  position: absolute;
+  left: -22px; 
+  top: -9px; 
+}

@@ -14,6 +14,10 @@ import InfoPanel from '../components/game/InfoPanel';
 import Opcoes from '../components/Opcoes';
 import ComoJogar from '../components/ComoJogar';
 import Profile from '../components/Profile';
+import ShareButtons from '../components/game/ShareButtons';
+import FeedbackModal from '../components/game/FeedbackModal'; // <-- IMPORTE ISSO
+import feedbackStyles from '../components/game/Feedback.module.css';
+
 
 // 1. O MAPA COMPLETO (não mudou)
 const CARD_SPRITE_MAP = {
@@ -151,6 +155,7 @@ const GamePage = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState(null);
   const [finalGameTime, setFinalGameTime] = useState(null);
+  const [showFeedback, setShowFeedback] = useState(false);
   
   // --- MUDANÇA 2: Inicializar o 'navigate' ---
   const navigate = useNavigate();
@@ -228,6 +233,34 @@ useEffect(() => {
     playAudio(audioButton);
     navigate('/');
   };
+  const handleGameLoad = (gameState) => {
+    setGameId(gameState.gameId);
+    
+    // Traduz as cartas do backend para o formato visual do frontend
+    setHand(gameState.hand.map(translateBackendCard));
+    
+    // Atualiza pontuações e status
+    setScore(gameState.currentLevelScore); // Note: O JSON usa 'currentLevelScore'
+    setTargetScore(gameState.targetScore);
+    setDiscardsRemaining(gameState.discardsRemaining);
+    setCurrentLevel(gameState.currentLevel);
+    setHandsRemaining(gameState.handsRemaining);
+    setDeckCount(gameState.deckCount);
+    setIsGameOver(gameState.isGameOver);
+    
+    // Se o jogo já vier com mensagem (ex: "Nível 1")
+    if (gameState.gameStatusMessage) {
+      setGameStatusMessage(gameState.gameStatusMessage);
+    }
+
+    // Se o jogo recuperado já estiver Game Over (caso raro, mas possível)
+    if (gameState.isGameOver) {
+        // Define o tempo final se existir
+        if (gameState.elapsedGameTimeSeconds) {
+            setFinalGameTime(gameState.elapsedGameTimeSeconds);
+        }
+    }
+  };
   const formatTime = (totalSeconds) => {
   if (!totalSeconds || totalSeconds === 0) {
     return "00:00"; // Retorna 00:00 se não houver tempo
@@ -240,22 +273,38 @@ useEffect(() => {
 };
   // --- MUDANÇA 4: Usar 'api.post' (Axios) e tratar erros ---
   useEffect(() => {
-    const startGame = async () => {
+    const initGame = async () => {
       try {
-        // USA O AXIOS (que já tem o header de Auth)
-        const response = await api.post('/game/start');
-        const gameState = response.data; // O Axios já faz o .json()
+        // --- TENTATIVA 1: RESUMIR JOGO EXISTENTE ---
+        console.log("Verificando jogo em andamento...");
+        const response = await api.get('/game/resume');
         
-        setGameId(gameState.gameId);
-        setHand(gameState.hand.map(translateBackendCard));
-        setScore(gameState.totalScore);
-        setDiscardsRemaining(gameState.discardsRemaining);
-        
+        console.log("Jogo encontrado! Restaurando...");
+        handleGameLoad(response.data);
+
       } catch (error) {
-        handleApiError(error, "iniciar o jogo");
+        // Se o erro for 404, significa que o usuário NÃO tem jogo ativo.
+        // Isso é normal na primeira vez que ele joga.
+        if (error.response && error.response.status === 404) {
+            
+            console.log("Nenhum jogo ativo. Criando novo...");
+            
+            // --- TENTATIVA 2: CRIAR NOVO JOGO ---
+            try {
+                const startResponse = await api.post('/game/start');
+                handleGameLoad(startResponse.data);
+            } catch (startError) {
+                handleApiError(startError, "criar novo jogo");
+            }
+
+        } else {
+            // Se for outro erro (ex: 401 Sem Auth, 500 Erro Servidor)
+            handleApiError(error, "verificar jogo existente");
+        }
       }
     };
-    startGame();
+
+    initGame();
   }, [navigate]); // Adiciona 'navigate' às dependências
 const isFirstRender = useRef(true);
 const playClickSound = () => {
@@ -489,6 +538,7 @@ const playClickSound = () => {
           />
         </div>
       )}
+      
       {isGameOver && (
         <div className={styles.gameOverOverlay}>
           <div className={styles.gameOverBox}>
@@ -500,6 +550,11 @@ const playClickSound = () => {
               </p>
             )}
             {/* Container para os botões */}
+            <ShareButtons 
+               score={score} 
+               level={currentLevel} 
+               gameId={gameId} // O ID do jogo atual
+            />
             <div className={styles.gameOverButtons}>
               <button 
                 className={styles.gameOverButton} 
@@ -519,7 +574,22 @@ const playClickSound = () => {
           </div>
         </div>
       )}
-      
+      {showFeedback && (
+        <FeedbackModal 
+          onClose={() => setShowFeedback(false)}
+          playClickSound={() => playClickSound(audioButton)} // Use sua função de som
+        />
+      )}
+      <button 
+        className={feedbackStyles.floatingBtn}
+        onClick={() => {
+            playClickSound(audioButton);
+            setShowFeedback(true);
+        }}
+        title="Enviar Feedback"
+      >
+        ?
+      </button>
       <ScoreBox 
         score={score} 
         targetScore={targetScore} 
