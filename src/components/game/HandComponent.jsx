@@ -1,136 +1,160 @@
-// src/components/HandComponent.jsx
+import React, { useEffect, useRef, useMemo } from 'react'; // <-- Verifique se tem os 3
 
-import React, { useRef, useEffect } from 'react';
-import * as PIXI from 'pixi.js';
+// O áudio de "comprar" (draw) pertence a este componente
 
-/**
- * Este componente é "burro". Ele não sabe nada sobre a lógica do jogo.
- * Ele apenas recebe dados (props) e desenha a mão.
- * * Props:
- * - app: A instância PIXI.Application (já pronta)
- * - handData: Array de nomes de texturas a desenhar
- * - selectedIndices: Um Set() com os índices das cartas selecionadas
- * - onCardClick: Função de callback (ex: handleCardClick(index))
- * - spritesRef: A ref do pai (GamePage) que vamos preencher com os sprites
- */
-const HandComponent = ({ 
-  app, 
-  handData, 
-  selectedIndices, 
-  onCardClick, 
-  spritesRef 
+
+
+
+const HandComponent = ({
+  hand,
+  selected,
+  isAnimating,
+  onCardClick,
+  cardSpriteMap,
+  cardBackTextureName,
+  styles,
+  audioDraw,
+  playAudioFromStart
+  // Nota: Removi 'animationType' e 'audioFoil', 
+  // já que você os moveu para o GamePage (corretamente!)
 }) => {
   
-  // Ref local apenas para o container
-  const handContainerRef = useRef(null);
+  const backSpriteInfo = cardSpriteMap[cardBackTextureName] || { x: 0, y: 0 };
 
-  // Efeito 1: Cria/Recria a mão quando os dados mudam
+  // --- INÍCIO DA CORREÇÃO ---
+
+  // 1. Criamos o Set de IDs da mão ATUAL (para comparações)
+  const currentHandIdSet = useMemo(() => new Set(hand.map(c => c.id)), [hand]);
+
+  // 2. Criamos uma ref para o Set de IDs ANTERIOR
+  // Começa vazia.
+  const prevHandIdSetRef = useRef(new Set()); 
+  
+  // 3. Criamos uma ref para o estado ANTERIOR de isAnimating
+  const prevIsAnimatingRef = useRef(isAnimating);
+
+
+  // Efeito principal para tocar os sons
   useEffect(() => {
-    if (!app || !app.stage) return; // Segurança
-
-    console.log("HandComponent: Montando a mão...");
-
-    // 1. Cria o container e adiciona-o ao stage
-    const handContainer = new PIXI.Container();
-    handContainerRef.current = handContainer;
-    app.stage.addChild(handContainer);
-
-    // 2. Limpa a ref de sprites do pai
-    spritesRef.current = [];
     
-    const cardSpacing = 40; 
+    // Pega os valores da renderização *anterior*
+    const prevIds = prevHandIdSetRef.current;
+    const prevAnimating = prevIsAnimatingRef.current;
 
-    // 3. Loop (o mesmo código que tínhamos antes)
-    handData.forEach((textureName, index) => {
-      const texture = PIXI.Assets.get(textureName);
-      if (!texture) {
-        console.warn(`Textura não encontrada: ${textureName}`);
-        return; 
-      }
-
-      const cardSprite = new PIXI.Sprite(texture);
-      cardSprite.anchor.set(0.5, 1.0); 
-
-      // O 'isSelected' já não é preciso aqui, 
-      // pois o 'GamePage' (pai) é quem sabe
-
-      const CARD_VISIBLE_WIDTH = 56; 
-      const CARD_VISIBLE_HEIGHT = 82;
-      const PADDING_INFERIOR_ESTIMADO = 10;
-      
-      cardSprite.hitArea = new PIXI.Rectangle(
-        -CARD_VISIBLE_WIDTH / 2, 
-        -(CARD_VISIBLE_HEIGHT + PADDING_INFERIOR_ESTIMADO), 
-        CARD_VISIBLE_WIDTH, 
-        CARD_VISIBLE_HEIGHT 
-      );
-      cardSprite.x = index * cardSpacing;
-      cardSprite.y = 0; // Posição default
-      cardSprite.eventMode = 'static'; 
-      cardSprite.cursor = 'pointer'; 
-
-      // 4. O clique agora chama a função do Pai
-      cardSprite.on('pointertap', () => {
-        onCardClick(index); // "Avisa" o GamePage que foi clicado
-      });
-
-      handContainer.addChild(cardSprite);
+    // --- CONDIÇÃO 1: MÃO INICIAL (quando o jogo começa) ---
+    // Se a mão anterior estava vazia (size 0) E
+    // a mão atual tem cartas (> 0) E
+    // não estamos a animar (a jogar/descartar)
+    if (prevIds.size === 0 && currentHandIdSet.size > 0 && !isAnimating) {
       
-      // 5. Preenche a ref do Pai com o sprite
-      spritesRef.current.push(cardSprite);
-    });
+      console.log("[HandComponent] Mão Inicial detectada. Tocando sons...");
+      
+      hand.forEach((card, index) => {
+        // Toca som para CADA carta, pois todas são novas
+        console.log(`-- Carta: ${card.id} no índice ${index}. Tocando som...`);
+        setTimeout(() => {
+      playAudioFromStart(audioDraw); // <-- ESTA LINHA MUDOU
+    }, index * 100);
+      });
+    }
     
-    // 6. Lógica de Resize (vive aqui)
-    const handleResize = () => {
-      if (!app || app._destroyed || !handContainer) return; 
-
-      const handXOffset = -50; // Posição da mão
-
-      const bottomY = (app.screen.height / app.stage.scale.y) - 20;
-      const centerX = (app.screen.width / app.stage.scale.x / 2);
-      
-      handContainer.x = (centerX - (handContainer.width / 2)) + handXOffset;
-      handContainer.y = bottomY;
-    };
-
-    // Guarda a ref do listener para o 'destroy'
-    app.resizeListener = handleResize; 
-    app.renderer.on('resize', app.resizeListener);
-    handleResize(); // Posiciona
-
-    // 7. Função de Limpeza (do componente)
-    return () => {
-      console.log("HandComponent: Destruindo a mão...");
+    // --- CONDIÇÃO 2: MÃOS SEGUINTES (após jogar/descartar) ---
+    // Se a animação acabou de MUDAR de 'true' para 'false'
+    else if (prevAnimating === true && isAnimating === false) {
       
-      if (app && app.renderer && app.resizeListener) {
-        app.renderer.off('resize', app.resizeListener);
-      }
-      if (handContainer) {
-        handContainer.destroy({ children: true });
-      }
-      spritesRef.current = [];
-      handContainerRef.current = null;
-    };
+      console.log("[HandComponent] Animação terminou. Verificando novas cartas...");
 
-  // Dependências: Recria a mão SE o app ou os dados da mão mudarem
-  }, [app, handData, onCardClick, spritesRef]);
+      hand.forEach((card, index) => {
+        // Se a carta atual NÃO ESTAVA no set anterior... é nova.
+        if (!prevIds.has(card.id)) {
+          console.log(`-- Nova carta: ${card.id} no índice ${index}. Tocando som...`);
+          
+          // Toca o som APENAS para a carta nova, sincronizado com o seu 'index'
+          setTimeout(() => {
+            playAudioFromStart(audioDraw);
+          }, index * 100);
+        }
+      });
+    }
+
+    // SEMPRE atualiza as refs no final, para preparar a *próxima* renderização
+    prevHandIdSetRef.current = currentHandIdSet;
+    prevIsAnimatingRef.current = isAnimating;
+
+  }, [hand, isAnimating, currentHandIdSet, audioDraw, playAudioFromStart]); // Depende dos valores ATUAIS
+  
+  // --- FIM DA CORREÇÃO ---
 
 
-  // Efeito 2: Atualiza a SELEÇÃO (sobe/desce)
-  // Roda sempre que 'selectedIndices' muda. É super rápido.
-  useEffect(() => {
-    // Loop nos sprites que guardámos na ref do pai
-    spritesRef.current.forEach((sprite, index) => {
-      if (selectedIndices.has(index)) {
-        sprite.y = -20; // Sobe
-      } else {
-        sprite.y = 0;   // Desce
-      }
-    });
-  }, [selectedIndices, spritesRef]); // Dependência: só a seleção
+  return (
+    <div className={styles.handContainer}>
+      
+      {hand.map((card, index) => {
+        // O seu JSX aqui (não precisa de mudar nada)
+        // ...
+        const frontSpriteInfo = cardSpriteMap[card.textureName] || { x: 0, y: 0 };
+        const isSelected = selected.has(card.id);
 
-  // Este componente não renderiza HTML, só no Pixi
-  return null;
+        return (
+          // 1. O POSICIONADOR
+          <div
+            key={card.id}
+            className={`${styles.card} ${isSelected ? styles.selected : ''}`}
+            onClick={() => onCardClick(card.id)}
+            style={
+              (isAnimating && isSelected) ? {
+                // Estilos de "jogar"
+                animationName: styles.playAnimation,
+                animationDuration: '0.5s',
+                animationFillMode: 'forwards',
+                animationDelay: '0s', 
+              } : {
+                // Estilos de "deal" (sincronizados com o som)
+                animationDelay: `${index * 100}ms`,
+              }
+            }
+          >
+            {/* 2. O "VIRADOR" */}
+            <div
+              className={styles.cardInner}
+              style={
+                (isAnimating && isSelected) ? {
+                  // Estilos de "jogar"
+                  animationPlayState: 'paused',
+                  animationDelay: '0s', 
+                } : {
+                  // Estilos de "deal" (sincronizados com o som)
+                  animationDelay: `${index * 100}ms`,
+                }
+              }
+            >
+
+              {/* 3. O VERSO DA CARTA */}
+              <div className={`${styles.cardFace} ${styles.cardBack}`}>
+                <div
+                  className={styles.cardSprite}
+                  style={{
+                    backgroundPosition: `-${backSpriteInfo.x}px -${backSpriteInfo.y}px`,
+                  }}
+                />
+              </div>
+
+              {/* 4. A FRENTE DA CARTA */}
+              <div className={`${styles.cardFace} ${styles.cardFront}`}>
+                <div
+                  className={styles.cardSprite}
+                  style={{
+                    backgroundPosition: `-${frontSpriteInfo.x}px -${frontSpriteInfo.y}px`,
+                  }}
+                />
+              </div>
+
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
 };
 
 export default HandComponent;

@@ -138,3 +138,106 @@
 .toggle input:checked + .sliderToggle {
   background-color: #3e046b;
 }
+/* Adicione isto ao seu arquivo .css */
+
+/* Container para os botões (para alinhá-los) */
+.buttonContainer {
+  display: flex;
+  flex-direction: column; /* Botões um em cima do outro */
+  gap: 1rem; /* Espaço entre os botões */
+  width: 100%;
+  padding: 0 1.5rem; /* Alinha com os controles */
+  margin-top: 2rem; /* Espaço acima do primeiro botão */
+}
+
+/* Ajusta o botão 'fechar' (remove a margem de cima, já que o container tem) */
+.close {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  text-transform: uppercase;
+  padding: 0.8em 1.5em;
+  
+  /* margin-top: 2rem; <-- REMOVA/SOBRESCREVA ISTO */
+  margin-top: 0; 
+  
+  background: #333;
+  color: white;
+  border: 2px solid #555;
+  text-shadow: 2px 2px #00000040;
+  box-shadow: 2px 2px 0px #00000080;
+  
+  cursor: pointer;
+  transition: all 0.1s ease-in-out;
+  outline: none; 
+  width: 100%; /* Faz os botões terem a mesma largura */
+}
+
+.close:hover {
+  background: #555;
+  box-shadow: 3px 3px 0px #000000a0;
+  transform: translate(-1px, -1px);
+}
+
+.close:active {
+  background: #222;
+  box-shadow: 1px 1px 0px #00000080;
+  transform: translate(1px, 1px);
+}
+
+/* Estilo para o novo botão (vermelho) */
+.returnButton {
+  background-color: #f44336; /* Cor vermelha (do seu discardButton) */
+  border-color: #b71c1c;
+}
+
+.returnButton:hover {
+  background-color: #ef5350;
+}
+
+.returnButton:active {
+  background-color: #d32f2f;
+}
+/* Em Opcoes.module.css */
+
+/* ... (seus estilos .box, .close, .control, etc.) ... */
+
+/* Estilo para o conteúdo do Perfil */
+.profileContent {
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem; /* Espaço entre os itens */
+  width: 100%;
+  padding: 0 1.5rem; /* Alinha com os outros controles */
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+.profileItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #aaa; /* Cor do "label" (ex: "Usuário:") */
+  text-transform: uppercase;
+}
+
+.profileValue {
+  color: #ffff00; /* Cor do valor (ex: "string") */
+  font-size: 1.1rem;
+  text-align: right;
+  text-transform: none;
+}
+
+/* Estilos para Loading e Erro */
+.loadingText {
+  color: #fff;
+  font-size: 0.9rem;
+  padding: 2rem 0;
+  text-align: center;
+}
+
+.errorText {
+  color: #ff4757; /* Vermelho (do Game Over) */
+  font-size: 0.9rem;
+  padding: 2rem 0;
+  text-align: center;
+}

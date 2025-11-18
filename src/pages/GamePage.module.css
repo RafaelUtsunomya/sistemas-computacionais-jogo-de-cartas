@@ -1,53 +1,654 @@
-.gameContainer {
-width: 100vw;
-height: 100vh;
-overflow: hidden;
-background: linear-gradient(180deg, #18002d, #260042);
-font-family: 'Press Start 2P', cursive;
-color: #fff;
+.gameCOntainer{
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  background: linear-gradient(180deg, #18002d, #260042);
+  font-family: 'Press Start 2P', cursive;
+  color: #fff;
+  position: relative;
+  perspective: 2000px;
 }
 
-.gameContainer canvas {
-display: block;
-width: 100%;
-height: 100%;
+/* --- ESTILOS DO BARALHO --- */
+.deck {
+  position: absolute;
+  bottom: 40px;
+  right: 40px;
+  
+  width: 56px;
+  height: 82px;
+  overflow: visible; /* MUDANÇA: permitir que o texto apareça fora */
+  
+  transform: scale(3);
+  transform-origin: bottom right;
+  
+  filter: drop-shadow(4px 4px 0px #00000080);
 }
 
+.deckCountText {
+  position: absolute;
+  top: -20px; /* Posição acima da carta */
+  left: 50%;
+  transform: translateX(-50%); /* Centraliza horizontalmente */
+  
+  background-color: #1a0030; /* Fundo escuro */
+  border: 2px solid #4a008c; /* Borda */
+  padding: 2px 8px;
+  border-radius: 5px; /* Bordas arredondadas */
+  
+  color: #fff;
+  font-size: 0.4rem;
+  font-family: 'Press Start 2P', cursive;
+  white-space: nowrap; /* Evita que o texto quebre linha */
+  z-index: 1; /* Garante que está acima da carta */
+}
+
+
+/* --- NOVOS ESTILOS PARA A MÃO (REACT/DOM) --- */
+
+.handContainer {
+  position: absolute;
+  bottom:130px;
+  left: 50%;
+  /* (8 cartas * 60px de espaço = 480px) / 2 = 240px */
+  transform: translateX(-280px);
+  height: 250px; 
+}
+
+
+/* --- MUDANÇA: DIV EXTERIOR (O "POSICIONADOR") --- */
+.card {
+  width: 56px;
+  height: 82px;
+  
+  position: absolute;
+  bottom: 0;
+  
+  transform-origin: bottom center;
+  
+  /* --- MUDANÇA 1: Propriedades comuns da animação "deal" --- */
+  /* O animation-name vem do :nth-child */
+  /* Removemos o 'animation' atalho daqui */
+  animation-duration: 1.2s;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  animation-fill-mode: forwards;
+  /* O animation-delay será definido pelo React inline style */
+  /* --- FIM DA MUDANÇA 1 --- */
+  
+  transition: transform 0.2s ease-out, bottom 0.2s ease-out;
+  cursor: pointer;
+}
+
+/* --- ESTRUTURA 3D FLIP --- */
+.cardInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  
+  /* --- MUDANÇA 2: Aplica a animação de "virar" (LONGHAND) --- */
+  /* Trocamos o 'animation' atalho por propriedades específicas */
+  animation-name: flipAnimation;
+  animation-duration: 1.2s;
+  animation-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+  animation-fill-mode: forwards;
+  /* O animation-delay será agora definido pelo React inline style */
+  /* --- FIM DA MUDANÇA 2 --- */
+}
+
+.cardFace {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  overflow: hidden; /* Corta o .cardSprite */
+}
+
+.cardFront {
+  transform: rotateY(180deg);
+}
+
+.cardBack {
+  transform: rotateY(0deg);
+}
+
+/* --- FIM DA ESTRUTURA 3D --- */
+
+
+/* --- O DIV DO SPRITE --- */
+.cardSprite {
+  width: 100px;
+  height: 100px;
+  background-image: url(/assets/baralho.png);
+  background-repeat: no-repeat;
+
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
+  
+  position: relative;
+  left: -22px; 
+  top: -9px; 
+}
+
+
+/* --- O "LEQUE" (Corrigido) --- */
+/* --- MUDANÇA 3: Define o 'left' E APENAS O NOME da animação --- */
+/* Removemos o 'animation' atalho e definimos só o 'animation-name' */
+.card:nth-child(1) { left: 0px;   animation-name: dealAnimation1; }
+.card:nth-child(2) { left: 70px;  animation-name: dealAnimation2; }
+.card:nth-child(3) { left: 140px; animation-name: dealAnimation3; }
+.card:nth-child(4) { left: 210px; animation-name: dealAnimation4; }
+.card:nth-child(5) { left: 280px; animation-name: dealAnimation5; }
+.card:nth-child(6) { left: 350px; animation-name: dealAnimation6; }
+.card:nth-child(7) { left: 420px; animation-name: dealAnimation7; }
+.card:nth-child(8) { left: 490px; animation-name: dealAnimation8; }
+/* --- FIM DA MUDANÇA 3 --- */
+
+
+/* --- SELEÇÃO --- */
+.card.selected {
+  bottom: 60px; 
+}
+
+
+/* --- ANIMAÇÕES (Corrigido) --- */
+/* Temos de definir uma animação para CADA carta */
+@keyframes dealAnimation1 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(-14deg); opacity: 1; }
+}
+@keyframes dealAnimation2 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(-10deg); opacity: 1; }
+}
+@keyframes dealAnimation3 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(-6deg); opacity: 1; }
+}
+@keyframes dealAnimation4 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(-2deg); opacity: 1; }
+}
+@keyframes dealAnimation5 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(2deg); opacity: 1; }
+}
+@keyframes dealAnimation6 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(6deg); opacity: 1; }
+}
+@keyframes dealAnimation7 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(10deg); opacity: 1; }
+}
+@keyframes dealAnimation8 {
+  from { transform: translateX(400px) translateY(-200px) scale(1) rotate(0deg); opacity: 0; }
+  to { transform: scale(3) rotate(14deg); opacity: 1; }
+}
+
+/* Animação de "Virar" (enquanto voa) */
+@keyframes flipAnimation {
+  from { transform: rotateY(0deg); }
+  to { transform: rotateY(180deg); }
+}
+
+
+/* Animação de "Jogar" (quando clica 'Jogar Mão') */
+@keyframes playAnimation {
+  from {
+    bottom: 60px; /* Posição 'selected' */
+    opacity: 1;
+  }
+  to {
+    bottom: 600px; /* Voa para cima */
+    opacity: 0;
+  }
+}
+
+
+/* --- ESTILO DO BOTÃO --- */
 .playButton {
-position: absolute;
-bottom: 40px;
-left: 50%;
-transform: translateX(-50%);
-z-index: 10;
-background-color: #4CAF50;
-border: 4px solid #2e7d32;
-color: white;
-padding: 12px 24px;
-font-family: 'Press Start 2P', cursive;
-font-size: 1rem;
-cursor: pointer;
-text-shadow: 2px 2px #00000040;
-box-shadow: 4px 4px 0px #00000080;
-transition: all 0.1s ease-in-out;
+  position: absolute;
+  bottom: 40px; /* Define a altura */
+  left: 50%; /* Ancora no centro */
+  
+  /* MUDANÇA: Tamanho fixo */
+  width: 340px; 
+  text-align: center; /* Centraliza o texto */
+  
+  /* Move 100% da sua largura para a esquerda + 10px de espaço */
+  transform: translateX(calc(-100% - 10px)); 
+  
+  z-index: 10;
+  
+  /* Cores Azuis */
+  background-color: #3B82F6; 
+  border: 4px solid #1D4ED8; 
+  
+  color: white;
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  cursor: pointer;
+  text-shadow: 2px 2px #00000040;
+  box-shadow: 4px 4px 0px #00000080;
+  transition: all 0.1s ease-in-out;
 }
 
 .playButton:hover {
-background-color: #66bb6a;
-box-shadow: 6px 6px 0px #000000a0;
-transform: translateX(-50%) translate(-1px, -1px);
+  background-color: #60A5FA; 
+  box-shadow: 6px 6px 0px #000000a0;
+  transform: translateX(calc(-100% - 10px)) translate(-1px, -1px); 
 }
 
 .playButton:active {
-background-color: #388e3c;
-box-shadow: 2px 2px 0px #00000080;
-transform: translateX(-50%) translate(2px, 2px);
+  background-color: #2563EB; 
+  box-shadow: 2px 2px 0px #00000080;
+  transform: translateX(calc(-100% - 10px)) translate(2px, 2px); 
 }
 
 .playButton:disabled {
-background-color: #555;
-border-color: #333;
-color: #999;
-cursor: not-allowed;
-box-shadow: none;
-transform: translateX(-50%);
+  background-color: #555;
+  border-color: #333;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: translateX(calc(-100% - 10px)); 
+}
+.scoreBox {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background-color: #1a0030;
+  border: 4px solid #4a008c;
+  color: white;
+  padding: 16px;
+  font-family: 'Press Start 2P', cursive;
+  text-shadow: 2px 2px #000000a0;
+  box-shadow: 4px 4px 0px #00000080;
+  min-width: 250px;
+  text-align: center;
+  z-index: 10;
+  
+  /* --- MUDANÇAS --- */
+  min-height: 260px; /* 1. MAIS ALTO (era 220px) */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between; /* Espaça as 3 seções */
+}
+
+/* --- Seção 1: Pontos e Meta --- */
+.scoreSection {
+  border-bottom: 2px solid #4a008c; /* Separador */
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+}
+
+.scoreLabel {
+  font-size: 1rem; /* 2. TEXTO MAIOR (era 0.8rem) */
+  color: #aaa;
+  margin-bottom: 8px;
+  letter-spacing: 1px;
+}
+
+.scoreValue {
+  font-size: 2.8rem; /* 2. TEXTO MAIOR (era 2.5rem) */
+  color: #ffff00;
+  line-height: 1;
+}
+
+/* Estilo para a meta (ex: / 300) */
+.targetValue {
+  font-size: 1.5rem; /* Menor que os pontos, maior que antes */
+  color: #ff8080; /* Cor vermelha da meta */
+  opacity: 0.8;
+}
+
+
+/* --- Seção 2: Infos (Nível, Mãos, etc.) --- */
+.infoSection {
+  flex-grow: 1; /* Ocupa o espaço extra no meio */
+  text-align: left; /* Alinha NÍVEL: ... à esquerda */
+  padding: 0 5px; /* Pequeno espaçamento interno */
+}
+
+.infoItem {
+  display: flex;
+  justify-content: space-between;
+  font-size: 1rem; /* 2. TEXTO MAIOR (era 0.9rem) */
+  margin-bottom: 12px; /* Mais espaço entre os itens */
+}
+
+.infoValue {
+  color: #fff; /* Branco para destacar */
+  font-weight: bold;
+}
+
+
+/* --- Seção 3: Botões (Novos) --- */
+.buttonSection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px; /* Espaço entre os botões */
+  margin-top: 10px; /* Espaço acima dos botões */
+}
+
+/* 3. ESTILO DOS NOVOS BOTÕES */
+.scoreBoxButton {
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.9rem;
+  padding: 10px;
+  background: #333; /* Fundo escuro neutro */
+  color: white;
+  border: 2px solid #555;
+  text-shadow: 2px 2px #00000040;
+  box-shadow: 2px 2px 0px #00000080;
+  cursor: pointer;
+  transition: all 0.1s ease-in-out;
+  text-transform: uppercase;
+}
+
+.scoreBoxButton:hover {
+  background: #555;
+  box-shadow: 3px 3px 0px #000000a0;
+  transform: translate(-1px, -1px);
+}
+
+.scoreBoxButton:active {
+  background: #222;
+  box-shadow: 1px 1px 0px #00000080;
+  transform: translate(1px, 1px);
+}
+/* Agrupa Nível e Mãos */
+.levelInfo {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem; /* Um pouco menor que o principal */
+  color: #fff; /* Branco normal */
+  margin-bottom: 8px;
+}
+
+/* Estilo para a Meta (antigo .scoreTarget) */
+.targetInfo {
+  font-size: 0.9rem;
+  color: #ff8080; /* Vermelho claro para a meta */
+  margin-bottom: 8px;
+}
+
+/* Estilo para os Descartes */
+.discardsInfo {
+  font-size: 0.9rem;
+  color: #aaa; /* Cinza, menos importante */
+}
+.discardButton {
+  position: absolute;
+  bottom: 40px; /* Mesma altura */
+  left: 50%;    /* Ancora no centro */
+  
+  /* MUDANÇA: Tamanho fixo (igual ao playButton) */
+  width: 340px; 
+  text-align: center; /* Centraliza o texto */
+
+  /* Move 10px para a direita (começa 10px após o centro) */
+  transform: translateX(10px); 
+  
+  z-index: 10;
+  background-color: #f44336; 
+  border: 4px solid #b71c1c; 
+  color: white;
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  cursor: pointer;
+  text-shadow: 2px 2px #00000040;
+  box-shadow: 4px 4px 0px #00000080;
+  transition: all 0.1s ease-in-out;
+}
+
+.discardButton:hover {
+  background-color: #ef5350;
+  box-shadow: 6px 6px 0px #000000a0;
+  transform: translateX(10px) translate(-1px, -1px); 
+}
+
+.discardButton:active {
+  background-color: #d32f2f;
+  box-shadow: 2px 2px 0px #00000080;
+  transform: translateX(10px) translate(2px, 2px); 
+}
+
+.discardButton:disabled {
+  background-color: #555;
+  border-color: #333;
+  color: #999;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: translateX(10px); 
+}
+.handResultAnimation {
+  position: absolute;
+  top: 45%; /* Um pouco acima do centro */
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  
+  background-color: #1a0030c0; /* Fundo semi-transparente */
+  border: 4px solid #ffff00; /* Borda amarela */
+  padding: 24px;
+  box-shadow: 8px 8px 0px #000000a0;
+  
+  /* Aplica a animação */
+  animation: showHandResult 1.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.handResultName {
+  font-size: 2rem;
+  color: #fff;
+  text-shadow: 3px 3px #000;
+}
+
+.handResultScore {
+  font-size: 3rem;
+  color: #ffff00; /* Amarelo */
+  text-shadow: 3px 3px #000;
+  margin-top: 8px;
+}
+
+/* Animação de aparecer e desaparecer */
+@keyframes showHandResult {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  20% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+.infoPanel {
+  position: absolute;
+  top: 20px;
+  right: 20px; /* Posiciona "ao lado", no canto direito */
+  width: 280px; /* Largura do painel */
+  
+  background-color: #1a0030; /* Mesmo fundo do scoreBox */
+  border: 4px solid #4a008c; /* Mesma borda do scoreBox */
+  color: white;
+  padding: 16px;
+  font-family: 'Press Start 2P', cursive;
+  text-shadow: 2px 2px #000000a0;
+  box-shadow: 4px 4px 0px #00000080;
+  z-index: 10;
+  
+  /* Ajustes de texto */
+  font-size: 0.7rem; /* Fonte menor para caber tudo */
+  line-height: 1.6;
+}
+
+.infoPanelTitle {
+  font-size: 0.9rem;
+  color: #ffff00; /* Amarelo, como o score */
+  margin-bottom: 10px;
+  margin-top: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #4a008c; /* Separador */
+}
+
+/* O primeiro título não precisa de margem no topo */
+.infoPanelTitle:first-of-type {
+  margin-top: 0;
+}
+
+.infoPanelSection p {
+  margin: 0;
+  padding: 0;
+  color: #ddd; /* Cor base do texto */
+}
+
+/* --- AS CLASSES DE COR QUE VOCÊ PEDIU --- */
+
+.blueText {
+  color: #00e5ff; /* Um azul "neon" fácil de ler */
+  font-weight: bold;
+}
+
+.redText {
+  color: #ff4757; /* Um vermelho "neon" fácil de ler */
+  font-weight: bold;
+}
+.gameOverOverlay {
+  /* --- 1. BLOQUEIO E POSICIONAMENTO --- */
+  position: fixed; /* Cobre a tela inteira, ignorando o resto */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  
+  /* --- 2. BLOQUEIO DE CLIQUE --- */
+  background-color: rgba(0, 0, 0, 0.85); /* Fundo escuro semi-transparente */
+  z-index: 200; /* Garante que está NA FRENTE de tudo (cartas, botões, etc.) */
+  
+  /* --- 3. CENTRALIZAÇÃO DA MENSAGEM --- */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  font-family: 'Press Start 2P', cursive;
+}
+
+/* Esta é a caixa branca/roxa no meio */
+.gameOverBox {
+  background-color: #1a0030;
+  border: 4px solid #ffff00; /* Borda amarela */
+  padding: 40px;
+  text-align: center;
+  color: white;
+  box-shadow: 8px 8px 0px #000000a0;
+}
+
+.gameOverBox h1 {
+  color: #ff4757; /* Vermelho */
+  font-size: 2.5rem;
+  margin-bottom: 20px;
+}
+
+.gameOverBox p {
+  font-size: 1.2rem;
+  color: #fff;
+  margin-bottom: 30px; /* Aumenta o espaço abaixo do texto */
+}
+
+/* Container para alinhar os botões */
+.gameOverButtons {
+  display: flex; /* Coloca os botões lado a lado */
+  justify-content: center; /* Centraliza o grupo */
+  gap: 20px; /* Espaço entre os botões */
+}
+
+/* Estilo base (compartilhado pelos dois botões) */
+.gameOverButton {
+  padding: 12px 24px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 1rem;
+  color: white;
+  text-shadow: 2px 2px #00000040;
+  box-shadow: 4px 4px 0px #00000080;
+  transition: all 0.1s ease-in-out;
+  cursor: pointer;
+  
+  /* Cor "Jogar Novamente" (Azul, igual ao seu .playButton) */
+  background-color: #3B82F6; 
+  border: 4px solid #1D4ED8; 
+}
+
+.gameOverButton:hover {
+  background-color: #60A5FA;
+  box-shadow: 6px 6px 0px #000000a0;
+  transform: translate(-1px, -1px);
+}
+
+.gameOverButton:active {
+  background-color: #2563EB;
+  box-shadow: 2px 2px 0px #00000080;
+  transform: translate(2px, 2px);
+}
+
+/* Classe extra para o botão "Voltar ao Menu" */
+.menuButton {
+  /* Cor "Menu" (Roxo, para diferenciar) */
+  background-color: #8B5CF6; /* Roxo */
+  border: 4px solid #6D28D9; /* Roxo escuro */
+}
+
+.menuButton:hover {
+  background-color: #A78BFA; /* Roxo claro */
+}
+
+.menuButton:active {
+  background-color: #7C3AED; /* Roxo médio */
+}
+.victoryTitle {
+  color: green;
+  /* Você pode usar uma cor mais bonita, como: */
+  /* color: #4CAF50; */ 
+  /* text-shadow: 0 0 5px #aaffaa; */
+}
+.modalOverlay {
+  /* Posicionamento */
+  position: absolute; /* Usa o 'relative' do .gameContainer */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  
+  /* Cor de fundo */
+  background-color: rgba(0, 0, 0, 0.75); /* Escurece o jogo */
+  
+  /* A MÁGICA: Centralização com Flexbox */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
+  /* Garante que fica por cima de tudo */
+  z-index: 100; 
+}
+.finalTimeText {
+  font-size: 1.2rem;
+  color: #ffff00; /* Amarelo (como a pontuação) */
+  margin-bottom: 30px; /* Alinha com a margem do <p> acima */
+  text-shadow: 2px 2px #000000a0;
 }
